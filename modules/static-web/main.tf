@@ -3,7 +3,7 @@ data "aws_route53_zone" "default" {
 }
 
 data "aws_acm_certificate" "default" {
-  domain = "${var.domain}"
+  domain = "${var.name}.${var.domain}"
   statuses = [
     "ISSUED"
   ]
@@ -89,14 +89,14 @@ resource "aws_cloudfront_distribution" "default" {
   }
 
   viewer_certificate {
-    acm_certificate_arn = "${aws_acm_certificate.default.certificate_arn}"
+    acm_certificate_arn = "${data.aws_acm_certificate.default.certificate_arn}"
     minimum_protocol_version = "TLSv1"
     ssl_support_method = "sni-only"
   }
 }
 
 resource "aws_route53_record" "default" {
-  zone_id = "${aws_route53_zone.default.zone_id}"
+  zone_id = "${data.aws_route53_zone.default.zone_id}"
 
   name = "${var.name}.${var.domain}"
   type = "A"
