@@ -3,5 +3,5 @@ variable region {
 }
 
 variable domain {
-  default = "opsnow.io"
+  default = ""
 }
