@@ -2,10 +2,19 @@ variable region {
   default = "ap-northeast-2"
 }
 
-variable name {
-  default = "web"
+variable zone_id {
+  //default = ""
 }
 
-variable domain {
-  default = "opsnow.io"
+variable certificate_arn {
+  //default = ""
+}
+
+variable domain_name {
+  type = "list"
+  //default = []
+}
+
+variable index_html {
+  default = ""
 }

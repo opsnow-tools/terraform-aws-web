@@ -12,13 +12,19 @@ terraform {
   }
 }
 
-module "repo" {
-  source = "./modules/static-web"
-  region = "${var.region}"
-  name   = "repo"
+module "domain" {
+  source = "./modules/route53"
   domain = "${var.domain}"
 }
 
-output "url" {
-  value = "https://repo.${var.domain}"
+module "repo" {
+  source = "./modules/static-web"
+  region = "${var.region}"
+
+  zone_id = "${module.domain.zone_id}"
+  certificate_arn = "${module.domain.certificate_arn}"
+
+  domain_name = [
+    "repo.${var.domain}"
+  ]
 }

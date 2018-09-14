@@ -1,17 +1,9 @@
-data "aws_route53_zone" "default" {
-  name = "${var.domain}"
-}
-
-data "aws_acm_certificate" "default" {
-  domain = "${var.name}.${var.domain}"
-  statuses = [
-    "ISSUED"
-  ]
-  most_recent = true
+provider "aws" {
+  region = "${var.region}"
 }
 
 resource "aws_s3_bucket" "default" {
-  bucket = "${var.name}.${var.domain}"
+  bucket = "${element(var.domain_name, 0)}"
 
   acl = "public-read"
   force_destroy = true
@@ -22,10 +14,21 @@ resource "aws_s3_bucket" "default" {
   }
 }
 
+resource "aws_s3_bucket_object" "default" {
+  count = "${var.index_html != "" ? 1 : 0}"
+
+  bucket = "${aws_s3_bucket.default.bucket}"
+  source = "${var.index_html}"
+  key    = "index.html"
+
+  content_type = "text/html"
+  acl = "public-read"
+}
+
 resource "aws_cloudfront_distribution" "default" {
   origin {
-    origin_id = "S3-${var.name}.${var.domain}"
-    domain_name = "${var.name}.${var.domain}.s3.amazonaws.com"
+    origin_id = "S3-${element(var.domain_name, 0)}"
+    domain_name = "${element(var.domain_name, 0)}.s3.amazonaws.com"
 
     s3_origin_config {
       origin_access_identity = ""
@@ -33,7 +36,7 @@ resource "aws_cloudfront_distribution" "default" {
   }
 
   aliases = [
-    "${var.name}.${var.domain}"
+    "${var.domain_name}"
   ]
 
   enabled = true
@@ -54,7 +57,7 @@ resource "aws_cloudfront_distribution" "default" {
       "HEAD",
       "GET",
     ]
-    target_origin_id = "S3-${var.name}.${var.domain}"
+    target_origin_id = "S3-${element(var.domain_name, 0)}"
 
     forwarded_values {
       query_string = false
@@ -89,16 +92,18 @@ resource "aws_cloudfront_distribution" "default" {
   }
 
   viewer_certificate {
-    acm_certificate_arn = "${data.aws_acm_certificate.default.arn}"
+    acm_certificate_arn = "${var.certificate_arn}"
     minimum_protocol_version = "TLSv1"
     ssl_support_method = "sni-only"
   }
 }
 
 resource "aws_route53_record" "default" {
-  zone_id = "${data.aws_route53_zone.default.zone_id}"
+  count = "${length(var.domain_name)}"
 
-  name = "${var.name}.${var.domain}"
+  zone_id = "${var.zone_id}"
+
+  name = "${element(var.domain_name, count.index)}"
   type = "A"
 
   alias {
